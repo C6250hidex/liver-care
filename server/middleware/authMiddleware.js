@@ -1,12 +1,18 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+if (!process.env.JWT_SECRET) {
+  console.error("❌ CRITICAL: JWT_SECRET is not set in environment variables");
+}
+
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "No token, authorization denied" });
+    return res
+      .status(401)
+      .json({ message: "No token provided, authorization denied" });
   }
 
   try {
@@ -16,7 +22,10 @@ const authMiddleware = (req, res, next) => {
     req.userRole = decoded.role;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Token is not valid" });
+    console.warn("[AUTH] Token verification failed:", err.message);
+    return res
+      .status(401)
+      .json({ message: "Token is not valid or has expired" });
   }
 };
 

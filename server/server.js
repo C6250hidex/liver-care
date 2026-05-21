@@ -36,6 +36,15 @@ app.get("/", (req, res) => {
   res.send("Liver Care API is running...");
 });
 
+// Health Check Endpoint
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 // Test DB Connection Route
 app.get("/test-db", async (req, res) => {
   try {
@@ -50,8 +59,17 @@ app.get("/test-db", async (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
+  console.error("[ERROR]", {
+    timestamp: new Date().toISOString(),
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+  });
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
+    status: err.status || 500,
+  });
 });
 
 // Ensure the doctor_notes table exists before accepting traffic.
@@ -101,6 +119,20 @@ db.execute(
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`✅ Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`✅ Database: ${process.env.DB_HOST}`);
+  console.log(
+    `✅ Client URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`,
+  );
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Gracefully shutting down...");
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
 });
