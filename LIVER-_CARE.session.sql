@@ -1,59 +1,63 @@
-USE liver_care_db;
 
--- 1. Users Table
+USE defaultdb;
+
+-- 3. USERS (The foundation)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fullname VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('patient', 'doctor', 'admin') DEFAULT 'patient',
+    is_verified BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    verification_token VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Doctors Profile
+-- 4. DOCTOR PROFILES
 CREATE TABLE doctors_profiles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
+    user_id INT NOT NULL,
     specialization VARCHAR(100) DEFAULT 'General Hepatologist',
-    experience_years INT,
+    experience_years INT DEFAULT 0,
     bio TEXT,
-    consultation_fee DECIMAL(10,2),
-    availability_json JSON, -- e.g., ["Monday", "Wednesday"]
+    consultation_fee DECIMAL(10,2) DEFAULT 50.00,
+    availability_json JSON,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 3. AI Analysis Results
+-- 5. AI RESULTS
 CREATE TABLE ai_results (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    risk_score INT, -- 0 to 100
-    warning_level ENUM('Low', 'Medium', 'High', 'Critical'),
+    user_id INT NOT NULL,
+    risk_score INT NOT NULL,
+    warning_level VARCHAR(50) NOT NULL,
     symptoms_analyzed JSON,
     recommendations TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 4. Appointments
-
+-- 6. APPOINTMENTS
 CREATE TABLE appointments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    patient_id INT,
-    doctor_id INT,
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
     appointment_date DATETIME NOT NULL,
     status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'pending',
     reason_for_visit TEXT,
     ai_assessment_id INT, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES users(id),
-    FOREIGN KEY (doctor_id) REFERENCES users(id),
+    FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (ai_assessment_id) REFERENCES ai_results(id) ON DELETE SET NULL
 );
 
+-- 7. HEALTH LOGS
 CREATE TABLE health_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    fever DECIMAL(4,1), -- e.g. 38.5
+    user_id INT NOT NULL,
+    fever DECIMAL(4,1),
     fatigue ENUM('none', 'mild', 'moderate', 'severe'),
     jaundice BOOLEAN DEFAULT FALSE,
     nausea ENUM('none', 'mild', 'moderate', 'severe'),
@@ -61,12 +65,8 @@ CREATE TABLE health_logs (
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-USE liver_care_db;
 
--- 1. Remove the old table if it exists
-DROP TABLE IF EXISTS doctor_notes;
-
--- 2. Create the enhanced version
+-- 8. DOCTOR NOTES
 CREATE TABLE doctor_notes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     appointment_id INT NOT NULL,
@@ -77,96 +77,54 @@ CREATE TABLE doctor_notes (
     prescribed_meds TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
-    FOREIGN KEY (doctor_id) REFERENCES users(id),
-    FOREIGN KEY (patient_id) REFERENCES users(id)
+    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Add verification to users
-ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN verification_token VARCHAR(255);
-
--- Blog Table
+-- 9. BLOGS
 CREATE TABLE blogs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    author_id INT,
+    author_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    category ENUM('Hepatitis Info', 'Liver Health', 'Medical News') DEFAULT 'Liver Health',
+    excerpt TEXT,
+    category VARCHAR(100) DEFAULT 'Liver Health',
     image_url VARCHAR(255),
+    status ENUM('pending', 'published', 'rejected') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (author_id) REFERENCES users(id)
+    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Blog Subscribers
+-- 10. BLOG SUBSCRIBERS
 CREATE TABLE blog_subscribers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-DELETE FROM users WHERE email = 'obinnaokrt12@gmail.com';
 
-USE liver_care_db;
-ALTER TABLE blogs ADD COLUMN excerpt TEXT AFTER content;
-UPDATE users SET role = 'admin', is_verified = 1 WHERE email = 'chidex6250@gmail.com';
-
-
-INSERT INTO users (fullname, email, password, role, is_verified, is_active) 
-VALUES (
-  'System Admin', 
-  'chidex20045@gmail.com', 
-  '$2a$10$I6hY/6O7Z6/O6Z6/O6Z6/Oe.e1S3G9H1I2J3K4L5M6N7O8P9Q0R1S', 
-  'admin', 
-  1, 
-  1
+-- 11. REMINDERS
+CREATE TABLE reminders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    reminder_date DATETIME NOT NULL,
+    status ENUM('pending', 'completed') DEFAULT 'pending',
+    type VARCHAR(50) DEFAULT 'general',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-
--- 1. Add moderation status to Blogs
-ALTER TABLE blogs 
-ADD COLUMN status ENUM('pending', 'published', 'rejected') DEFAULT 'pending';
-
--- 2. Add Lockdown status to Users
-ALTER TABLE users 
-ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
-
+-- 12. ACTIVITY LOGS
 CREATE TABLE activity_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
-    action_type ENUM('registration', 'ai_checkup', 'appointment_booked', 'appointment_confirmed', 'profile_update'),
+    action_type VARCHAR(50),
     description TEXT,
     severity ENUM('info', 'warning', 'critical') DEFAULT 'info',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS reminders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    message VARCHAR(255) NOT NULL,
-    reminder_date DATETIME NOT NULL,
-    status ENUM('pending', 'completed') DEFAULT 'pending',
-    type ENUM('medication', 'checkup', 'general') DEFAULT 'general',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-INSERT INTO reminders (user_id, message, reminder_date, type) 
-VALUES (1, 'Take Tenofovir (300mg)', NOW(), 'medication');
-
-INSERT INTO reminders (user_id, message, reminder_date, type) 
-VALUES (1, 'Daily AI Symptom Log', NOW(), 'general');
-
-
-
-
-
-
-
-
-
-DESCRIBE users;
-
--- Run these individually
-ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) DEFAULT NULL;
-ALTER TABLE users ADD COLUMN role ENUM('patient', 'doctor', 'admin') DEFAULT 'patient';
+-- 13. SET UP MASTER ADMIN (Password is 'admin')
+INSERT INTO users (fullname, email, password, role, is_verified, is_active) 
+VALUES ('System Admin', 'chidex20045@gmail.com', '$2a$10$I6hY/6O7Z6/O6Z6/O6Z6/Oe.e1S3G9H1I2J3K4L5M6N7O8P9Q0R1S', 'admin', 1, 1);

@@ -28,9 +28,19 @@ This application is deployed across multiple platforms:
    - **Database**: Create a database named `liver_care_db`
 
 4. Run the database schema from `LIVER-_CARE.session.sql`:
+
    ```bash
    mysql -h your-aiven-host -u avnadmin -p liver_care_db < LIVER-_CARE.session.sql
    ```
+
+   If you cannot run the SQL file directly, you can bootstrap the database using the backend endpoints after deployment:
+   1. Set `ENABLE_SCHEMA_APPLY=true` in Render for the backend service.
+   2. Deploy the backend.
+   3. Call:
+      ```bash
+      curl -X POST https://liver-care-api.onrender.com/api/db/apply-schema
+      ```
+   4. Set `ENABLE_SCHEMA_APPLY=false` again once the schema is initialized.
 
 ## Step 2: Backend Deployment (Render.com)
 
@@ -48,6 +58,8 @@ This application is deployed across multiple platforms:
    DB_USER=avnadmin
    DB_PASSWORD=your-password
    DB_PORT=21814
+   DB_SSL=true
+   DB_CA_PATH=path/to/aiven-ca.pem
    JWT_SECRET=your-secret-key-min-32-chars
    BREVO_API_KEY=your-brevo-key
    SENDER_EMAIL=your-email@example.com
@@ -83,6 +95,22 @@ This application is deployed across multiple platforms:
 curl https://liver-care-api.onrender.com/api/health
 # Should respond with: {"status":"ok","timestamp":"...","uptime":...}
 ```
+
+### Diagnose and Bootstrap Database
+
+If the database schema is missing tables after deployment:
+
+```bash
+curl https://liver-care-api.onrender.com/api/db/diagnose
+```
+
+If you enabled schema bootstrap with `ENABLE_SCHEMA_APPLY=true`:
+
+```bash
+curl -X POST https://liver-care-api.onrender.com/api/db/apply-schema
+```
+
+Then disable `ENABLE_SCHEMA_APPLY` after the schema is initialized.
 
 ## Step 3: Frontend Deployment (Render.com)
 
