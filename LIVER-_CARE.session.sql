@@ -126,5 +126,14 @@ CREATE TABLE activity_logs (
 );
 
 -- 13. SET UP MASTER ADMIN (Password is 'admin')
-INSERT INTO users (fullname, email, password, role, is_verified, is_active) 
-VALUES ('System Admin', 'chidex20045@gmail.com', '$2a$10$I6hY/6O7Z6/O6Z6/O6Z6/Oe.e1S3G9H1I2J3K4L5M6N7O8P9Q0R1S', 'admin', 1, 1);
+
+
+UPDATE users
+SET role = 'admin',
+    is_verified = 1,
+    is_active = 1
+WHERE email = 'chidex6250@gmail.com';
+
+
+DELETE FROM users
+WHERE email = 'chidex20045@gmail.com';

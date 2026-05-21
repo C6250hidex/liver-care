@@ -45,7 +45,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
-    window.location.href = "/login";
+    const baseUrl = window.location.href.split("#")[0].replace(/\/+$/, "");
+    window.location.href = `${baseUrl}/#/login`;
   };
 
   const value = useMemo(

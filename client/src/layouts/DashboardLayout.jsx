@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
@@ -220,6 +220,7 @@ const DashboardLayout = () => {
   const sidebarRef = useRef(null);
 
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // 2. Select links based on role
   const currentNavLinks =
@@ -262,6 +263,7 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     logout();
+    navigate("/login");
   };
 
   const currentPage = currentNavLinks.find(

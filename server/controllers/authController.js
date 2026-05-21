@@ -58,7 +58,7 @@ exports.register = async (req, res) => {
       );
     }
 
-    const verifyURL = `${clientUrl}/verify-email/${verificationToken}`;
+    const verifyURL = `${clientUrl.replace(/\/+$/, "")}/#/verify-email/${verificationToken}`;
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
           <div style="background-color: #0284C7; padding: 30px; text-align: center;">

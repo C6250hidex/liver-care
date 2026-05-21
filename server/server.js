@@ -33,8 +33,20 @@ app.use("/api/doctor", doctorRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/admin", adminRoutes);
 
+const clientDistPath = path.join(__dirname, "../client/dist");
+const isProdWithClient =
+  process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath);
+
+if (isProdWithClient) {
+  app.use(express.static(clientDistPath));
+}
+
 // Test Route
 app.get("/", (req, res) => {
+  if (isProdWithClient) {
+    return res.sendFile(path.join(clientDistPath, "index.html"));
+  }
+
   res.send("Liver Care API is running...");
 });
 
@@ -203,6 +215,16 @@ async function initializeDatabaseSchema() {
       err.message,
     );
   }
+}
+
+// Client fallback for production SPA routes
+if (isProdWithClient) {
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
 }
 
 // Start server first, then initialize database schema in background

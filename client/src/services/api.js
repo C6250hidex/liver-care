@@ -28,7 +28,8 @@ API.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      const baseUrl = window.location.href.split("#")[0].replace(/\/+$/, "");
+      window.location.href = `${baseUrl}/#/login`;
     }
 
     if (error.response?.status === 403) {
